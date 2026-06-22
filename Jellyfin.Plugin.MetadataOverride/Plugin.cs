@@ -25,7 +25,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// </summary>
     public static Plugin? Instance { get; private set; }
 
-    public override string Name => "Metadata Override";
+    public override string Name => "JellyMDC";
 
     public override Guid Id => Guid.Parse("7f3b2a14-9c6d-4e8f-b1a2-3c4d5e6f7a8b");
 
