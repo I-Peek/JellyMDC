@@ -8,6 +8,14 @@
     "category": "Metadata",
     "versions": [
       {
+        "version": "1.1.0.0",
+        "changelog": "Erste Version: ueberschreibt Titel, Sortiertitel, Beschreibung, Genres und Tags.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/I-Peek/JellyMDC/releases/download/v1.1.0.0/metadata-override_1.1.0.0.zip",
+        "checksum": "67dcbb77294ed3e733fe6274289b6b35",
+        "timestamp": "2026-06-22T19:59:55Z"
+      },
+      {
         "version": "1.0.0.3",
         "changelog": "Erste Version: ueberschreibt Titel, Sortiertitel, Beschreibung, Genres und Tags.",
         "targetAbi": "10.11.0.0",
