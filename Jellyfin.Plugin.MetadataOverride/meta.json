@@ -2,7 +2,7 @@
     "category": "Metadata",
     "guid": "7f3b2a14-9c6d-4e8f-b1a2-3c4d5e6f7a8b",
     "name": "Metadata Override",
-    "description": "Speichert deine manuellen Metadaten-Aenderungen pro Film und traegt sie nach jedem Refresh automatisch wieder ein. Zuordnung ueber TMDB-/IMDB-ID.",
+    "description": "Saves your manual metadata changes for each movie and automatically reapplies them after every refresh. Matches via TMDB/IMDB ID.",
     "overview": "Behaelt deine eigenen Metadaten nach Datei-Umbenennungen und Refreshes.",
     "owner": "self",
     "targetAbi": "10.11.0.0",
