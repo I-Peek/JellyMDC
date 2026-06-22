@@ -7,7 +7,7 @@
     "owner": "self",
     "targetAbi": "10.11.0.0",
     "framework": "net9.0",
-    "version": "1.0.0.1",
+    "version": "1.0.0.2",
     "changelog": "Erste Version: ueberschreibt Titel, Sortiertitel, Beschreibung, Genres und Tags fuer Filme.",
     "timestamp": "2026-06-22T00:00:00Z",
     "status": "Active",
