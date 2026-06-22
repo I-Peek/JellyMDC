@@ -26,7 +26,7 @@ public class OverrideMetadataProvider : ICustomMetadataProvider<Movie>, IHasOrde
         _logger = logger;
     }
 
-    public string Name => "Metadata Override";
+    public string Name => "JellyMDC";
 
     // Hoher Wert => laeuft nach den normalen Fetchern, damit unsere Werte das letzte Wort haben.
     public int Order => 1000;
