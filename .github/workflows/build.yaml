@@ -13,7 +13,7 @@ permissions:
 env:
   PLUGIN_NAME: "JellyMDC"
   PLUGIN_GUID: "7f3b2a14-9c6d-4e8f-b1a2-3c4d5e6f7a8b"
-  VERSION: "1.0.0.3"
+  VERSION: "1.1.0.0"
   TARGET_ABI: "10.11.0.0"
   DLL_NAME: "Jellyfin.Plugin.MetadataOverride.dll"
   PROJECT: "Jellyfin.Plugin.MetadataOverride/Jellyfin.Plugin.MetadataOverride.csproj"
