@@ -1,45 +1,95 @@
-- name: Generate & commit manifest.json
+name: Build & Release Plugin
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'manifest.json'
+
+permissions:
+  contents: write
+
+env:
+  PLUGIN_NAME: "JellyMDC"
+  PLUGIN_GUID: "7f3b2a14-9c6d-4e8f-b1a2-3c4d5e6f7a8b"
+  VERSION: "1.0.0.1"
+  TARGET_ABI: "10.11.0.0"
+  DLL_NAME: "Jellyfin.Plugin.MetadataOverride.dll"
+  PROJECT: "Jellyfin.Plugin.MetadataOverride/Jellyfin.Plugin.MetadataOverride.csproj"
+  CHANGELOG: "Erste Version: ueberschreibt Titel, Sortiertitel, Beschreibung, Genres und Tags."
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Build
+        run: dotnet publish "${{ env.PROJECT }}" -c Release -o publish
+
+      - name: Package plugin (only our DLL + meta.json)
+        run: |
+          set -e
+          mkdir -p staging
+          cp "publish/${{ env.DLL_NAME }}" staging/
+          cp "Jellyfin.Plugin.MetadataOverride/meta.json" staging/
+          ZIP="metadata-override_${{ env.VERSION }}.zip"
+          (cd staging && zip -r "../${ZIP}" .)
+          echo "ZIP=${ZIP}" >> "$GITHUB_ENV"
+          CHECKSUM=$(md5sum "${ZIP}" | cut -d ' ' -f1)
+          echo "CHECKSUM=${CHECKSUM}" >> "$GITHUB_ENV"
+          echo "Gebaut: ${ZIP} (md5 ${CHECKSUM})"
+
+      - name: Generate manifest.json (kumulativ)
         run: |
           set -e
           TAG="v${{ env.VERSION }}"
           SOURCE_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/${ZIP}"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          NEW_VERSION="{\"version\":\"${{ env.VERSION }}\",\"changelog\":\"${{ env.CHANGELOG }}\",\"targetAbi\":\"${{ env.TARGET_ABI }}\",\"sourceUrl\":\"${SOURCE_URL}\",\"checksum\":\"${CHECKSUM}\",\"timestamp\":\"${TIMESTAMP}\"}"
+          # Eintrag fuer die aktuelle Version als JSON-Objekt bauen
+          NEW_VERSION=$(jq -n \
+            --arg version   "${{ env.VERSION }}" \
+            --arg changelog "${{ env.CHANGELOG }}" \
+            --arg targetAbi "${{ env.TARGET_ABI }}" \
+            --arg sourceUrl "${SOURCE_URL}" \
+            --arg checksum  "${CHECKSUM}" \
+            --arg timestamp "${TIMESTAMP}" \
+            '{version:$version, changelog:$changelog, targetAbi:$targetAbi, sourceUrl:$sourceUrl, checksum:$checksum, timestamp:$timestamp}')
 
           if [ -f manifest.json ]; then
-            python3 - <<'PY'
-          import json, os
-          new_v = json.loads(os.environ["NEW_VERSION"])
-          with open("manifest.json") as f:
-              data = json.load(f)
-          data[0]["versions"] = [v for v in data[0]["versions"] if v["version"] != new_v["version"]]
-          data[0]["versions"].insert(0, new_v)
-          with open("manifest.json", "w") as f:
-              json.dump(data, f, indent=2)
-          PY
+            echo "Bestehende manifest.json gefunden - neue Version wird vorne eingefuegt"
+            # Etwaigen alten Eintrag gleicher Version entfernen, neuen vorne anhaengen
+            jq --argjson newv "$NEW_VERSION" \
+              '.[0].versions |= ([$newv] + (map(select(.version != $newv.version))))' \
+              manifest.json > manifest.tmp
+            mv manifest.tmp manifest.json
           else
-            cat > manifest.json <<MANIFEST
-          [
-            {
-              "guid": "${{ env.PLUGIN_GUID }}",
-              "name": "${{ env.PLUGIN_NAME }}",
-              "description": "Behaelt deine manuellen Metadaten nach Refreshes und Datei-Umbenennungen.",
-              "overview": "Eigene Metadaten-Overrides pro Film, zugeordnet ueber TMDB-/IMDB-ID.",
-              "owner": "${{ github.repository_owner }}",
-              "category": "Metadata",
-              "versions": [${NEW_VERSION}]
-            }
-          ]
-          MANIFEST
+            echo "Keine manifest.json vorhanden - wird neu erstellt"
+            jq -n \
+              --argjson newv     "$NEW_VERSION" \
+              --arg guid         "${{ env.PLUGIN_GUID }}" \
+              --arg name         "${{ env.PLUGIN_NAME }}" \
+              --arg owner        "${{ github.repository_owner }}" \
+              --arg description  "Behaelt deine manuellen Metadaten nach Refreshes und Datei-Umbenennungen." \
+              --arg overview     "Eigene Metadaten-Overrides pro Film, zugeordnet ueber TMDB-/IMDB-ID." \
+              '[{guid:$guid, name:$name, description:$description, overview:$overview, owner:$owner, category:"Metadata", versions:[$newv]}]' \
+              > manifest.json
           fi
 
-        env:
-          NEW_VERSION: ${{ toJSON(env.NEW_VERSION) }}
+          echo "----- manifest.json -----"
+          cat manifest.json
 
-      - name: Commit manifest.json zurück in den Branch
+      - name: Commit manifest.json zurueck in den Branch
         run: |
-          git config user.name "github-actions[bot]"
+          git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add manifest.json
           git diff --cached --quiet || git commit -m "ci: manifest fuer v${{ env.VERSION }} aktualisiert"
