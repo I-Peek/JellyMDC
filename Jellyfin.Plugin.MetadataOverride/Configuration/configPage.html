@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="utf-8" />
     <title>JellyMDC</title>
     <style>
-        .mdcWrap { max-width: 840px; }
+        .mdcWrap { max-width: 880px; }
         .mdcCard {
             background: rgba(255,255,255,.04);
             border: 1px solid rgba(255,255,255,.08);
@@ -13,23 +13,17 @@
             margin: 1em 0;
         }
         .mdcCard h3 { margin-top: .2em; }
-        .mdcField {
-            padding: .6em 0;
-            border-top: 1px solid rgba(255,255,255,.06);
-        }
-        .mdcField:first-of-type { border-top: none; }
-        .mdcField .checkboxContainer { margin-bottom: .25em; }
+        .mdcMuted { opacity: .75; }
+        .mdcCols { display: flex; flex-wrap: wrap; gap: 1.5em; }
+        .mdcCol { flex: 1; min-width: 200px; }
+        .mdcCol h4 { margin: .2em 0 .6em; }
         .mdcRow { display: flex; gap: .6em; align-items: flex-end; }
         .mdcRow .mdcGrow { flex: 1; }
-        .mdcMuted { opacity: .7; }
-        .mdcIdBadge {
-            display: inline-block; padding: .15em .6em; border-radius: 4px;
-            background: rgba(0,164,220,.15); font-size: .85em; margin-right: .4em;
-        }
-        #mdcEditor { display: none; }
-        table.mdcTable { width: 100%; border-collapse: collapse; }
-        table.mdcTable th { text-align: left; opacity: .8; font-weight: normal; padding-bottom: .4em; }
-        table.mdcTable td { padding: .5em 0; border-top: 1px solid rgba(255,255,255,.08); vertical-align: top; }
+        .mdcStatus { margin-top: .8em; font-weight: 600; }
+        table.mdcTable { width: 100%; border-collapse: collapse; margin-top: .5em; }
+        table.mdcTable th { text-align: left; opacity: .8; font-weight: normal; padding: .3em .4em; }
+        table.mdcTable td { padding: .4em; border-top: 1px solid rgba(255,255,255,.08); vertical-align: middle; }
+        table.mdcTable td.mdcChkCell { text-align: center; }
     </style>
 </head>
 <body>
@@ -39,84 +33,81 @@
 
             <h2>JellyMDC</h2>
             <p class="mdcMuted">
-                Suche einen Film, hake die Felder an, die du behalten willst, und speichere einen
-                Snapshot. Die Werte werden nach jedem Refresh automatisch wieder eingetragen –
-                zugeordnet über die TMDB-/IMDB-ID, also auch nach einem Umbenennen der Datei.
+                Choose which fields should be protected, then press <strong>Capture snapshot now</strong>.
+                JellyMDC stores the current values of the selected fields and re-applies them after every
+                refresh &ndash; matched by TMDB/IMDB id, so a file rename does not break it. Run the capture
+                again whenever you have changed something in Jellyfin that you want to keep.
             </p>
 
-            <!-- ====================== Film suchen ====================== -->
+            <!-- ============ Default rules ============ -->
             <div class="mdcCard">
-                <h3>1. Film auswählen</h3>
-                <div class="mdcRow">
-                    <div class="inputContainer mdcGrow" style="margin-bottom:0">
-                        <input id="mdcSearchInput" type="text" is="emby-input" placeholder="Filmtitel eingeben…" />
+                <h3>Default rules</h3>
+                <p class="mdcMuted" style="margin-top:0">
+                    These apply to your whole library. Tick the fields that should be kept for each type.
+                </p>
+                <div class="mdcCols">
+
+                    <div class="mdcCol">
+                        <h4>Movies</h4>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Movie_Title" /><span>Title</span></label>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Movie_SortTitle" /><span>Sort title</span></label>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Movie_Overview" /><span>Overview</span></label>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Movie_Genres" /><span>Genres</span></label>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Movie_Tags" /><span>Tags</span></label>
                     </div>
-                    <button is="emby-button" type="button" id="mdcSearchBtn" class="raised">
-                        <span>Suchen</span>
-                    </button>
-                </div>
-                <div id="mdcSearchResults" style="margin-top:.8em"></div>
-            </div>
 
-            <!-- ====================== Felder / Snapshot ====================== -->
-            <div class="mdcCard" id="mdcEditor">
-                <h3 id="mdcEditorTitle">2. Felder auswählen</h3>
-                <p id="mdcEditorMeta" class="mdcMuted" style="margin-top:0"></p>
+                    <div class="mdcCol">
+                        <h4>Series &amp; episodes</h4>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Series_Title" /><span>Title</span></label>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Series_SortTitle" /><span>Sort title</span></label>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Series_Overview" /><span>Overview</span></label>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Series_Genres" /><span>Genres</span></label>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Series_Tags" /><span>Tags</span></label>
+                    </div>
 
-                <div class="mdcField">
-                    <label class="checkboxContainer">
-                        <input is="emby-checkbox" type="checkbox" id="mdcChk_Title" />
-                        <span>Titel</span>
-                    </label>
-                    <input is="emby-input" type="text" id="mdcVal_Title" />
-                </div>
+                    <div class="mdcCol">
+                        <h4>Collections</h4>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Collection_Title" /><span>Title</span></label>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Collection_SortTitle" /><span>Sort title</span></label>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Collection_Overview" /><span>Overview</span></label>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Collection_Genres" /><span>Genres</span></label>
+                        <label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" id="chk_Collection_Tags" /><span>Tags</span></label>
+                    </div>
 
-                <div class="mdcField">
-                    <label class="checkboxContainer">
-                        <input is="emby-checkbox" type="checkbox" id="mdcChk_SortTitle" />
-                        <span>Sortiertitel</span>
-                    </label>
-                    <input is="emby-input" type="text" id="mdcVal_SortTitle" />
                 </div>
 
-                <div class="mdcField">
-                    <label class="checkboxContainer">
-                        <input is="emby-checkbox" type="checkbox" id="mdcChk_Overview" />
-                        <span>Beschreibung</span>
-                    </label>
-                    <textarea is="emby-textarea" id="mdcVal_Overview" rows="3" style="width:100%"></textarea>
-                </div>
-
-                <div class="mdcField">
-                    <label class="checkboxContainer">
-                        <input is="emby-checkbox" type="checkbox" id="mdcChk_Genres" />
-                        <span>Genres</span>
-                    </label>
-                    <input is="emby-input" type="text" id="mdcVal_Genres" placeholder="Komma-getrennt, z. B. Action, Drama" />
-                </div>
-
-                <div class="mdcField">
-                    <label class="checkboxContainer">
-                        <input is="emby-checkbox" type="checkbox" id="mdcChk_Tags" />
-                        <span>Tags</span>
-                    </label>
-                    <input is="emby-input" type="text" id="mdcVal_Tags" placeholder="Komma-getrennt" />
-                </div>
+                <p class="mdcMuted" style="margin-top:1em;font-size:.9em">
+                    Note: capturing <em>Overview</em> for a very large library can make the configuration big.
+                    If you have a huge library, start with Title / Sort title.
+                </p>
 
                 <div style="margin-top:1em">
-                    <button is="emby-button" type="button" id="mdcSnapshotBtn" class="raised button-submit block">
-                        <span>Snapshot speichern</span>
+                    <button is="emby-button" type="button" id="mdcCaptureBtn" class="raised button-submit block">
+                        <span>Capture snapshot now</span>
                     </button>
-                    <button is="emby-button" type="button" id="mdcCancelBtn" class="raised block" style="margin-top:.5em">
-                        <span>Abbrechen</span>
+                    <button is="emby-button" type="button" id="mdcSaveBtn" class="raised block" style="margin-top:.5em">
+                        <span>Save settings only (no capture)</span>
                     </button>
                 </div>
+                <div id="mdcStatus" class="mdcStatus"></div>
             </div>
 
-            <!-- ====================== Gespeicherte Overrides ====================== -->
+            <!-- ============ Exceptions ============ -->
             <div class="mdcCard">
-                <h3>Gespeicherte Overrides</h3>
-                <div id="mdcOverrideList"></div>
+                <h3>Exceptions</h3>
+                <p class="mdcMuted" style="margin-top:0">
+                    Individual titles that should use their own field selection instead of the default above.
+                    Search for a title, add it, then tick its fields. Episodes always follow the series default.
+                </p>
+                <div class="mdcRow">
+                    <div class="inputContainer mdcGrow" style="margin-bottom:0">
+                        <input id="mdcExcSearch" type="text" is="emby-input" placeholder="Search movie, series or collection…" />
+                    </div>
+                    <button is="emby-button" type="button" id="mdcExcSearchBtn" class="raised"><span>Search</span></button>
+                </div>
+                <div id="mdcExcResults" style="margin-top:.6em"></div>
+
+                <div id="mdcExcList" style="margin-top:1em"></div>
             </div>
 
         </div>
@@ -126,252 +117,266 @@
         (function () {
             var pluginId = "7f3b2a14-9c6d-4e8f-b1a2-3c4d5e6f7a8b";
 
-            // Alle Felder, die das Plugin speichern kann.
-            var FIELDS = ["Title", "SortTitle", "Overview", "Genres", "Tags"];
-            var LIST_FIELDS = { Genres: true, Tags: true };
+            var FIELD_KEYS = ["Title", "SortTitle", "Overview", "Genres", "Tags"];
+            var FIELD_LABELS = { Title: "Title", SortTitle: "Sort", Overview: "Overview", Genres: "Genres", Tags: "Tags" };
+            // group name -> config property name
+            var GROUPS = [["Movie", "MovieFields"], ["Series", "SeriesFields"], ["Collection", "CollectionFields"]];
 
-            // Merkt sich den gerade ausgewählten Film bzw. Eintrag.
-            var current = null; // { TmdbId, ImdbId, Label }
+            var exceptions = []; // in-memory copy of config.Exceptions
 
             function page() { return document.querySelector("#metadataOverridePage"); }
             function $(sel) { return page().querySelector(sel); }
-
-            function splitList(value) {
-                if (!value) { return []; }
-                return value.split(",").map(function (s) { return s.trim(); }).filter(function (s) { return s.length > 0; });
-            }
-
-            function escapeHtml(text) {
-                return String(text == null ? "" : text)
-                    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-            }
-
             function userId() { return ApiClient.getCurrentUserId(); }
 
-            // ---------- Film suchen ----------
-            function searchMovies() {
-                var q = $("#mdcSearchInput").value.trim();
-                if (!q) { return; }
-                Loading.show();
-                ApiClient.getItems(userId(), {
-                    IncludeItemTypes: "Movie",
-                    Recursive: true,
-                    SearchTerm: q,
-                    Limit: 30,
-                    SortBy: "SortName"
-                }).then(function (result) {
-                    Loading.hide();
-                    renderResults(result.Items || []);
+            function escapeHtml(t) {
+                return String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+            }
+
+            function setStatus(msg) { $("#mdcStatus").textContent = msg || ""; }
+
+            function providerId(it, key) {
+                if (!it.ProviderIds) { return ""; }
+                return it.ProviderIds[key] || it.ProviderIds[key.toLowerCase()] || "";
+            }
+
+            function labelOf(it) {
+                return (it.Name || "") + (it.ProductionYear ? " (" + it.ProductionYear + ")" : "");
+            }
+
+            function excKey(e) { return e.TmdbId || e.ImdbId || e.ItemId || ""; }
+
+            function typeFieldsProp(type) {
+                if (type === "Movie") { return "MovieFields"; }
+                if (type === "BoxSet") { return "CollectionFields"; }
+                return "SeriesFields"; // Series + Episode
+            }
+
+            // ---------- Rules read/write ----------
+            function readRulesIntoForm(config) {
+                GROUPS.forEach(function (g) {
+                    var fs = config[g[1]] || {};
+                    FIELD_KEYS.forEach(function (f) { $("#chk_" + g[0] + "_" + f).checked = !!fs[f]; });
                 });
             }
 
-            function renderResults(items) {
-                var c = $("#mdcSearchResults");
-                if (!items.length) {
-                    c.innerHTML = "<p class='mdcMuted'>Nichts gefunden.</p>";
+            function writeRulesFromForm(config) {
+                GROUPS.forEach(function (g) {
+                    var fs = {};
+                    FIELD_KEYS.forEach(function (f) { fs[f] = $("#chk_" + g[0] + "_" + f).checked; });
+                    config[g[1]] = fs;
+                });
+            }
+
+            // ---------- Exceptions ----------
+            function renderExceptions() {
+                var c = $("#mdcExcList");
+                if (!exceptions.length) {
+                    c.innerHTML = "<p class='mdcMuted'>No exceptions.</p>";
                     return;
                 }
-                var html = "";
-                items.forEach(function (it) {
-                    var year = it.ProductionYear ? " (" + it.ProductionYear + ")" : "";
-                    html += "<button is='emby-button' type='button' class='raised block mdcResultBtn' data-id='"
-                        + it.Id + "' style='text-align:left;margin:.25em 0'><span>"
-                        + escapeHtml(it.Name + year) + "</span></button>";
-                });
-                c.innerHTML = html;
-                c.querySelectorAll(".mdcResultBtn").forEach(function (btn) {
-                    btn.addEventListener("click", function () { selectMovie(this.getAttribute("data-id")); });
-                });
-            }
-
-            // ---------- Film laden -> Felder füllen ----------
-            function selectMovie(id) {
-                Loading.show();
-                ApiClient.getItem(userId(), id).then(function (item) {
-                    Loading.hide();
-
-                    var tmdb = (item.ProviderIds && (item.ProviderIds.Tmdb || item.ProviderIds.tmdb)) || "";
-                    var imdb = (item.ProviderIds && (item.ProviderIds.Imdb || item.ProviderIds.imdb)) || "";
-
-                    var values = {
-                        Title: item.Name || "",
-                        SortTitle: item.ForcedSortName || item.SortName || "",
-                        Overview: item.Overview || "",
-                        Genres: (item.Genres || []).join(", "),
-                        Tags: (item.Tags || []).join(", ")
-                    };
-
-                    // Standard: Felder mit Inhalt werden vorab angehakt.
-                    FIELDS.forEach(function (k) {
-                        var v = values[k];
-                        $("#mdcVal_" + k).value = v;
-                        $("#mdcChk_" + k).checked = !!(v && v.length > 0);
+                var html = "<table class='mdcTable'><tr><th>Title</th>";
+                FIELD_KEYS.forEach(function (f) { html += "<th style='text-align:center'>" + FIELD_LABELS[f] + "</th>"; });
+                html += "<th></th></tr>";
+                exceptions.forEach(function (e, idx) {
+                    var id = e.TmdbId ? ("TMDB " + e.TmdbId) : (e.ImdbId ? ("IMDB " + e.ImdbId) : "ID");
+                    html += "<tr><td>" + escapeHtml(e.Label || "(item)") + "<br><span class='mdcMuted' style='font-size:.8em'>" + escapeHtml(id) + "</span></td>";
+                    FIELD_KEYS.forEach(function (f) {
+                        var checked = e.Fields && e.Fields[f] ? "checked" : "";
+                        html += "<td class='mdcChkCell'><input type='checkbox' class='mdcExcChk' data-idx='" + idx + "' data-field='" + f + "' " + checked + " /></td>";
                     });
-
-                    var label = item.Name + (item.ProductionYear ? " (" + item.ProductionYear + ")" : "");
-                    current = { TmdbId: tmdb, ImdbId: imdb, Label: label };
-
-                    var idText = tmdb ? ("<span class='mdcIdBadge'>TMDB " + escapeHtml(tmdb) + "</span>") :
-                        (imdb ? ("<span class='mdcIdBadge'>IMDB " + escapeHtml(imdb) + "</span>") :
-                            "<span class='mdcIdBadge' style='background:rgba(220,80,80,.2)'>keine ID!</span>");
-                    $("#mdcEditorTitle").textContent = "2. " + label;
-                    $("#mdcEditorMeta").innerHTML = idText + (tmdb || imdb ? "" : "Ohne TMDB-/IMDB-ID lässt sich der Film nicht zuordnen.");
-
-                    showEditor();
-                });
-            }
-
-            function showEditor() {
-                $("#mdcEditor").style.display = "block";
-                $("#mdcEditor").scrollIntoView({ behavior: "smooth", block: "start" });
-            }
-
-            function hideEditor() {
-                $("#mdcEditor").style.display = "none";
-                current = null;
-            }
-
-            // ---------- Snapshot speichern ----------
-            function buildEntry() {
-                function val(k) { return $("#mdcVal_" + k).value.trim(); }
-                function chk(k) { return $("#mdcChk_" + k).checked; }
-                var e = { TmdbId: current.TmdbId, ImdbId: current.ImdbId, Label: current.Label };
-                FIELDS.forEach(function (k) {
-                    if (LIST_FIELDS[k]) {
-                        e[k] = chk(k) ? splitList(val(k)) : [];
-                    } else {
-                        e[k] = chk(k) ? val(k) : "";
-                    }
-                });
-                return e;
-            }
-
-            function saveSnapshot() {
-                if (!current || (!current.TmdbId && !current.ImdbId)) {
-                    alert("Dieser Film hat keine TMDB-/IMDB-ID – er kann nicht zugeordnet werden.");
-                    return;
-                }
-                var entry = buildEntry();
-                Loading.show();
-                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    config.Overrides = config.Overrides || [];
-                    var idx = -1;
-                    for (var i = 0; i < config.Overrides.length; i++) {
-                        var o = config.Overrides[i];
-                        if ((entry.TmdbId && o.TmdbId === entry.TmdbId) || (entry.ImdbId && o.ImdbId === entry.ImdbId)) {
-                            idx = i; break;
-                        }
-                    }
-                    if (idx >= 0) { config.Overrides[idx] = entry; } else { config.Overrides.push(entry); }
-                    ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
-                        Dashboard.processPluginConfigurationUpdateResult(result);
-                        hideEditor();
-                        $("#mdcSearchResults").innerHTML = "";
-                        $("#mdcSearchInput").value = "";
-                        loadOverrides();
-                    });
-                });
-            }
-
-            // ---------- Liste der gespeicherten Overrides ----------
-            function loadOverrides() {
-                Loading.show();
-                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    renderOverrideList(config.Overrides || []);
-                    Loading.hide();
-                });
-            }
-
-            function fieldSummary(o) {
-                var parts = [];
-                if (o.Title) { parts.push("Titel"); }
-                if (o.SortTitle) { parts.push("Sortiertitel"); }
-                if (o.Overview) { parts.push("Beschreibung"); }
-                if (o.Genres && o.Genres.length) { parts.push("Genres"); }
-                if (o.Tags && o.Tags.length) { parts.push("Tags"); }
-                return parts.join(", ") || "—";
-            }
-
-            function renderOverrideList(overrides) {
-                var c = $("#mdcOverrideList");
-                if (!overrides || overrides.length === 0) {
-                    c.innerHTML = "<p class='mdcMuted'>Noch keine Overrides gespeichert.</p>";
-                    return;
-                }
-                var html = "<table class='mdcTable'><tr><th>Film</th><th>Gespeicherte Felder</th><th></th></tr>";
-                overrides.forEach(function (o, index) {
-                    var id = o.TmdbId ? ("TMDB " + o.TmdbId) : (o.ImdbId ? ("IMDB " + o.ImdbId) : "—");
-                    var label = o.Label || "(ohne Notiz)";
-                    html += "<tr><td>" + escapeHtml(label) + "<br><span class='mdcMuted' style='font-size:.85em'>" + escapeHtml(id) + "</span></td>";
-                    html += "<td>" + escapeHtml(fieldSummary(o)) + "</td>";
-                    html += "<td style='text-align:right;white-space:nowrap'>";
-                    html += "<button is='emby-button' type='button' class='raised mdcEdit' data-index='" + index + "'><span>Bearbeiten</span></button> ";
-                    html += "<button is='emby-button' type='button' class='raised mdcDel' data-index='" + index + "'><span>Löschen</span></button>";
-                    html += "</td></tr>";
+                    html += "<td style='text-align:right'><button is='emby-button' type='button' class='raised mdcExcDel' data-idx='" + idx + "'><span>Remove</span></button></td></tr>";
                 });
                 html += "</table>";
                 c.innerHTML = html;
 
-                c.querySelectorAll(".mdcEdit").forEach(function (b) {
-                    b.addEventListener("click", function () { editOverride(parseInt(this.getAttribute("data-index"), 10)); });
+                c.querySelectorAll(".mdcExcChk").forEach(function (chk) {
+                    chk.addEventListener("change", function () {
+                        var i = parseInt(this.getAttribute("data-idx"), 10);
+                        var f = this.getAttribute("data-field");
+                        if (!exceptions[i].Fields) { exceptions[i].Fields = {}; }
+                        exceptions[i].Fields[f] = this.checked;
+                    });
                 });
-                c.querySelectorAll(".mdcDel").forEach(function (b) {
-                    b.addEventListener("click", function () { deleteOverride(parseInt(this.getAttribute("data-index"), 10)); });
+                c.querySelectorAll(".mdcExcDel").forEach(function (btn) {
+                    btn.addEventListener("click", function () {
+                        exceptions.splice(parseInt(this.getAttribute("data-idx"), 10), 1);
+                        renderExceptions();
+                    });
                 });
             }
 
-            function editOverride(index) {
+            function searchExceptions() {
+                var q = $("#mdcExcSearch").value.trim();
+                if (!q) { return; }
                 Loading.show();
-                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    var o = (config.Overrides || [])[index];
+                ApiClient.getItems(userId(), {
+                    IncludeItemTypes: "Movie,Series,BoxSet",
+                    Recursive: true,
+                    SearchTerm: q,
+                    Limit: 25,
+                    Fields: "ProviderIds"
+                }).then(function (result) {
                     Loading.hide();
-                    if (!o) { return; }
-
-                    var values = {
-                        Title: o.Title || "",
-                        SortTitle: o.SortTitle || "",
-                        Overview: o.Overview || "",
-                        Genres: (o.Genres || []).join(", "),
-                        Tags: (o.Tags || []).join(", ")
-                    };
-                    FIELDS.forEach(function (k) {
-                        var v = values[k];
-                        $("#mdcVal_" + k).value = v;
-                        $("#mdcChk_" + k).checked = !!(v && v.length > 0);
+                    var c = $("#mdcExcResults");
+                    var items = result.Items || [];
+                    if (!items.length) { c.innerHTML = "<p class='mdcMuted'>Nothing found.</p>"; return; }
+                    var html = "";
+                    items.forEach(function (it, i) {
+                        html += "<button is='emby-button' type='button' class='raised block mdcExcAdd' data-i='" + i + "' style='text-align:left;margin:.2em 0'><span>"
+                            + escapeHtml(labelOf(it)) + "  \u2013  " + escapeHtml(it.Type) + "</span></button>";
                     });
-
-                    current = { TmdbId: o.TmdbId || "", ImdbId: o.ImdbId || "", Label: o.Label || "" };
-                    var id = o.TmdbId ? ("TMDB " + o.TmdbId) : (o.ImdbId ? ("IMDB " + o.ImdbId) : "—");
-                    $("#mdcEditorTitle").textContent = "2. " + (o.Label || "Eintrag bearbeiten");
-                    $("#mdcEditorMeta").innerHTML = "<span class='mdcIdBadge'>" + escapeHtml(id) + "</span>";
-                    showEditor();
+                    c.innerHTML = html;
+                    c.querySelectorAll(".mdcExcAdd").forEach(function (btn) {
+                        btn.addEventListener("click", function () { addException(items[parseInt(this.getAttribute("data-i"), 10)]); });
+                    });
                 });
             }
 
-            function deleteOverride(index) {
+            function addException(it) {
+                var tmdb = providerId(it, "Tmdb"), imdb = providerId(it, "Imdb");
+                var key = tmdb || imdb || it.Id;
+                if (exceptions.some(function (e) { return excKey(e) === key; })) {
+                    setStatus("That title is already in the exceptions list.");
+                    return;
+                }
+                exceptions.push({
+                    TmdbId: tmdb, ImdbId: imdb, ItemId: it.Id, Label: labelOf(it),
+                    Fields: { Title: false, SortTitle: false, Overview: false, Genres: false, Tags: false }
+                });
+                $("#mdcExcResults").innerHTML = "";
+                $("#mdcExcSearch").value = "";
+                renderExceptions();
+                setStatus("Exception added. Tick its fields, then capture again.");
+            }
+
+            function findException(it) {
+                var tmdb = providerId(it, "Tmdb"), imdb = providerId(it, "Imdb");
+                return exceptions.find(function (e) {
+                    return (tmdb && e.TmdbId === tmdb) || (imdb && e.ImdbId === imdb) || (e.ItemId && e.ItemId === it.Id);
+                });
+            }
+
+            // ---------- Capture ----------
+            function effectiveFields(it, config) {
+                var ex = findException(it);
+                if (ex) { return ex.Fields; }
+                return config[typeFieldsProp(it.Type)] || {};
+            }
+
+            function buildSnapshot(it, fields) {
+                if (!fields) { return null; }
+                var any = false;
+                var e = { TmdbId: providerId(it, "Tmdb"), ImdbId: providerId(it, "Imdb"), ItemId: it.Id, Label: labelOf(it),
+                          Title: "", SortTitle: "", Overview: "", Genres: [], Tags: [] };
+                if (fields.Title && it.Name) { e.Title = it.Name; any = true; }
+                if (fields.SortTitle && (it.ForcedSortName || it.SortName)) { e.SortTitle = it.ForcedSortName || it.SortName; any = true; }
+                if (fields.Overview && it.Overview) { e.Overview = it.Overview; any = true; }
+                if (fields.Genres && it.Genres && it.Genres.length) { e.Genres = it.Genres; any = true; }
+                if (fields.Tags && it.Tags && it.Tags.length) { e.Tags = it.Tags; any = true; }
+                return any ? e : null;
+            }
+
+            function getAllItems(type) {
+                var all = [];
+                var pageSize = 200;
+                function fetchPage(start) {
+                    return ApiClient.getItems(userId(), {
+                        IncludeItemTypes: type,
+                        Recursive: true,
+                        StartIndex: start,
+                        Limit: pageSize,
+                        Fields: "ProviderIds,Genres,Tags,Overview,SortName",
+                        EnableImages: false
+                    }).then(function (result) {
+                        var items = result.Items || [];
+                        all = all.concat(items);
+                        if (items.length === pageSize && start < 100000) {
+                            return fetchPage(start + pageSize);
+                        }
+                        return all;
+                    });
+                }
+                return fetchPage(0);
+            }
+
+            function captureNow() {
+                $("#mdcCaptureBtn").disabled = true;
+                setStatus("Saving settings…");
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    writeRulesFromForm(config);
+                    config.Exceptions = exceptions;
+
+                    var types = ["Movie", "Series", "Episode", "BoxSet"];
+                    var typeNames = { Movie: "movies", Series: "series", Episode: "episodes", BoxSet: "collections" };
+                    var snapshots = [];
+
+                    function processType(i) {
+                        if (i >= types.length) {
+                            config.Overrides = snapshots;
+                            setStatus("Saving " + snapshots.length + " snapshots…");
+                            return ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                                Dashboard.processPluginConfigurationUpdateResult(result);
+                                setStatus("Done. Captured " + snapshots.length + " items. They will now survive refreshes.");
+                                $("#mdcCaptureBtn").disabled = false;
+                            });
+                        }
+                        var type = types[i];
+                        setStatus("Scanning " + typeNames[type] + "…");
+                        return getAllItems(type).then(function (items) {
+                            items.forEach(function (it) {
+                                var snap = buildSnapshot(it, effectiveFields(it, config));
+                                if (snap) { snapshots.push(snap); }
+                            });
+                            return processType(i + 1);
+                        });
+                    }
+
+                    return processType(0);
+                }).catch(function (err) {
+                    setStatus("Error during capture: " + (err && err.message ? err.message : err));
+                    $("#mdcCaptureBtn").disabled = false;
+                });
+            }
+
+            function saveSettingsOnly() {
+                setStatus("Saving settings…");
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    writeRulesFromForm(config);
+                    config.Exceptions = exceptions;
+                    return ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                        setStatus("Settings saved. (No snapshot taken yet.)");
+                    });
+                }).catch(function (err) {
+                    setStatus("Error: " + (err && err.message ? err.message : err));
+                });
+            }
+
+            // ---------- Load ----------
+            function load() {
                 Loading.show();
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    config.Overrides = config.Overrides || [];
-                    config.Overrides.splice(index, 1);
-                    ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
-                        Dashboard.processPluginConfigurationUpdateResult(result);
-                        loadOverrides();
+                    readRulesIntoForm(config);
+                    exceptions = (config.Exceptions || []).map(function (e) {
+                        return { TmdbId: e.TmdbId || "", ImdbId: e.ImdbId || "", ItemId: e.ItemId || "", Label: e.Label || "",
+                                 Fields: e.Fields || { Title: false, SortTitle: false, Overview: false, Genres: false, Tags: false } };
                     });
+                    renderExceptions();
+                    var count = (config.Overrides || []).length;
+                    setStatus(count ? ("Currently protecting " + count + " items.") : "");
+                    Loading.hide();
                 });
             }
 
-            // ---------- Verdrahtung ----------
+            // ---------- Wiring ----------
             var pageEl = page();
-            $("#mdcSearchBtn").addEventListener("click", searchMovies);
-            $("#mdcSearchInput").addEventListener("keydown", function (e) {
-                if (e.key === "Enter") { e.preventDefault(); searchMovies(); }
-            });
-            $("#mdcSnapshotBtn").addEventListener("click", saveSnapshot);
-            $("#mdcCancelBtn").addEventListener("click", hideEditor);
-            pageEl.addEventListener("pageshow", loadOverrides);
+            $("#mdcCaptureBtn").addEventListener("click", captureNow);
+            $("#mdcSaveBtn").addEventListener("click", saveSettingsOnly);
+            $("#mdcExcSearchBtn").addEventListener("click", searchExceptions);
+            $("#mdcExcSearch").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); searchExceptions(); } });
+            pageEl.addEventListener("pageshow", load);
 
-            if (window.ApiClient) { loadOverrides(); }
+            if (window.ApiClient) { load(); }
         })();
     </script>
 </div>

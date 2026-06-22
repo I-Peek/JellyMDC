@@ -10,7 +10,8 @@ using MediaBrowser.Model.Serialization;
 namespace Jellyfin.Plugin.MetadataOverride;
 
 /// <summary>
-/// Das Haupt-Plugin. Haelt die Konfiguration (deine Overrides) und stellt die Einstellungsseite bereit.
+/// Main plugin. Holds the configuration and exposes the settings page,
+/// including a quick-access entry in the dashboard sidebar.
 /// </summary>
 public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 {
@@ -20,9 +21,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         Instance = this;
     }
 
-    /// <summary>
-    /// Statischer Zugriff auf die laufende Plugin-Instanz (damit der Provider an die Overrides kommt).
-    /// </summary>
+    /// <summary>Static access to the running plugin instance (so the providers can reach the config).</summary>
     public static Plugin? Instance { get; private set; }
 
     public override string Name => "JellyMDC";
@@ -39,7 +38,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                 EmbeddedResourcePath = string.Format(
                     CultureInfo.InvariantCulture,
                     "{0}.Configuration.configPage.html",
-                    GetType().Namespace)
+                    GetType().Namespace),
+
+                // Shows JellyMDC as its own entry in the dashboard sidebar under "Plugins".
+                EnableInMainMenu = true,
+                DisplayName = "JellyMDC",
+                MenuIcon = "save"
             }
         };
     }

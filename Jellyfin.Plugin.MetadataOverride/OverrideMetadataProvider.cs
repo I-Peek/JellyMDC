@@ -3,7 +3,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.MetadataOverride.Configuration;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
@@ -12,43 +14,32 @@ using Microsoft.Extensions.Logging;
 namespace Jellyfin.Plugin.MetadataOverride;
 
 /// <summary>
-/// Laeuft als Teil des Metadaten-Refreshs und schreibt deine Overrides als Letztes ueber die
-/// frisch geladenen Daten. Dadurch gewinnen deine Werte zuverlaessig - auch nach "alles ersetzen"
-/// oder nach einem Umbenennen der Datei, weil die Zuordnung ueber die TMDB-/IMDB-ID laeuft
-/// und nicht ueber den Dateinamen.
+/// Shared logic: looks up the captured snapshot for an item and re-stamps the saved values
+/// over the freshly loaded data. Matching runs over TMDB-/IMDB-ID (survives renames) and,
+/// as a fallback, over the Jellyfin item id (used mainly for collections).
 /// </summary>
-public class OverrideMetadataProvider : ICustomMetadataProvider<Movie>, IHasOrder
+internal static class OverrideApplier
 {
-    private readonly ILogger<OverrideMetadataProvider> _logger;
-
-    public OverrideMetadataProvider(ILogger<OverrideMetadataProvider> logger)
-    {
-        _logger = logger;
-    }
-
-    public string Name => "JellyMDC";
-
-    // Hoher Wert => laeuft nach den normalen Fetchern, damit unsere Werte das letzte Wort haben.
-    public int Order => 1000;
-
-    public Task<ItemUpdateType> FetchAsync(Movie item, MetadataRefreshOptions options, CancellationToken cancellationToken)
+    public static ItemUpdateType Apply(BaseItem item, ILogger logger)
     {
         var config = Plugin.Instance?.Configuration;
-        if (config is null || config.Overrides.Length == 0)
+        if (config?.Overrides == null || config.Overrides.Length == 0)
         {
-            return Task.FromResult(ItemUpdateType.None);
+            return ItemUpdateType.None;
         }
 
         var tmdbId = item.GetProviderId(MetadataProvider.Tmdb);
         var imdbId = item.GetProviderId(MetadataProvider.Imdb);
+        var itemId = item.Id.ToString("N");
 
         var entry = config.Overrides.FirstOrDefault(o =>
             (!string.IsNullOrWhiteSpace(tmdbId) && string.Equals(o.TmdbId, tmdbId, StringComparison.OrdinalIgnoreCase))
-            || (!string.IsNullOrWhiteSpace(imdbId) && string.Equals(o.ImdbId, imdbId, StringComparison.OrdinalIgnoreCase)));
+            || (!string.IsNullOrWhiteSpace(imdbId) && string.Equals(o.ImdbId, imdbId, StringComparison.OrdinalIgnoreCase))
+            || (!string.IsNullOrWhiteSpace(o.ItemId) && string.Equals(o.ItemId, itemId, StringComparison.OrdinalIgnoreCase)));
 
         if (entry is null)
         {
-            return Task.FromResult(ItemUpdateType.None);
+            return ItemUpdateType.None;
         }
 
         var changed = false;
@@ -85,15 +76,70 @@ public class OverrideMetadataProvider : ICustomMetadataProvider<Movie>, IHasOrde
 
         if (changed)
         {
-            _logger.LogInformation(
-                "Override angewendet auf \"{Movie}\" (TMDB {Tmdb}, IMDB {Imdb})",
-                item.Name,
-                string.IsNullOrEmpty(tmdbId) ? "-" : tmdbId,
-                string.IsNullOrEmpty(imdbId) ? "-" : imdbId);
-
-            return Task.FromResult(ItemUpdateType.MetadataEdit);
+            logger.LogInformation("JellyMDC applied override to \"{Item}\"", item.Name);
+            return ItemUpdateType.MetadataEdit;
         }
 
-        return Task.FromResult(ItemUpdateType.None);
+        return ItemUpdateType.None;
     }
+}
+
+/// <summary>Re-applies snapshots to movies. Runs late so our values win.</summary>
+public class MovieOverrideProvider : ICustomMetadataProvider<Movie>, IHasOrder
+{
+    private readonly ILogger<MovieOverrideProvider> _logger;
+
+    public MovieOverrideProvider(ILogger<MovieOverrideProvider> logger) => _logger = logger;
+
+    public string Name => "JellyMDC";
+
+    public int Order => 1000;
+
+    public Task<ItemUpdateType> FetchAsync(Movie item, MetadataRefreshOptions options, CancellationToken cancellationToken)
+        => Task.FromResult(OverrideApplier.Apply(item, _logger));
+}
+
+/// <summary>Re-applies snapshots to series.</summary>
+public class SeriesOverrideProvider : ICustomMetadataProvider<Series>, IHasOrder
+{
+    private readonly ILogger<SeriesOverrideProvider> _logger;
+
+    public SeriesOverrideProvider(ILogger<SeriesOverrideProvider> logger) => _logger = logger;
+
+    public string Name => "JellyMDC";
+
+    public int Order => 1000;
+
+    public Task<ItemUpdateType> FetchAsync(Series item, MetadataRefreshOptions options, CancellationToken cancellationToken)
+        => Task.FromResult(OverrideApplier.Apply(item, _logger));
+}
+
+/// <summary>Re-applies snapshots to episodes.</summary>
+public class EpisodeOverrideProvider : ICustomMetadataProvider<Episode>, IHasOrder
+{
+    private readonly ILogger<EpisodeOverrideProvider> _logger;
+
+    public EpisodeOverrideProvider(ILogger<EpisodeOverrideProvider> logger) => _logger = logger;
+
+    public string Name => "JellyMDC";
+
+    public int Order => 1000;
+
+    public Task<ItemUpdateType> FetchAsync(Episode item, MetadataRefreshOptions options, CancellationToken cancellationToken)
+        => Task.FromResult(OverrideApplier.Apply(item, _logger));
+}
+
+/// <summary>Re-applies snapshots to collections (box sets).</summary>
+public class CollectionOverrideProvider : ICustomMetadataProvider<BoxSet>, IHasOrder
+{
+    private readonly ILogger<CollectionOverrideProvider> _logger;
+
+    public CollectionOverrideProvider(ILogger<CollectionOverrideProvider> logger) => _logger = logger;
+
+    public string Name => "JellyMDC";
+
+    public int Order => 1000;
+
+    public Task<ItemUpdateType> FetchAsync(BoxSet item, MetadataRefreshOptions options, CancellationToken cancellationToken)
+        => Task.FromResult(OverrideApplier.Apply(item, _logger));
 }
